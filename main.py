@@ -5,11 +5,17 @@ import threading
 from threading import Thread
 import random
 import requests
+from itertools import cycle
+
+
 
 mutex = RobloxClientMutex()
 
-with open("cookies.txt") as f:
+with open("cookies.txt", encoding='utf-8') as f:
     cookies = f.read().splitlines()
+
+with open('proxies.txt','r', encoding='utf-8') as f:
+	ProxyPool = cycle(f.read().splitlines())
 
 def get_session():
     while 1:
@@ -47,8 +53,8 @@ def noMessage(gameid):
             client.close()
         except:
             pass
-def likeGame(cookie, gameid):
-    token = getToken(cookie)
+def likeGame(cookie, gameid, proxy):
+    token = getToken(cookie, proxy)
     cookies = {
         ".ROBLOSECURITY": cookie
     }
@@ -59,45 +65,57 @@ def likeGame(cookie, gameid):
     headers = {
         'x-csrf-token': token
     }
-    likereq = requests.post(f'https://www.roblox.com/voting/vote?assetId={gameid}&vote=true', data=data, headers=headers, cookies=cookies)
+    likereq = requests.post(f'https://www.roblox.com/voting/vote?assetId={gameid}&vote=true', proxies=proxy, data=data, headers=headers, cookies=cookies)
     if likereq.status_code == 200:
-        print('Sucessfully liked game. If likes are not showing up account is unverified.')
+        if "EmailIsVerified" in likereq.text:
+            print('Account is not verified.')
+        else:
+            print('Sucessfully liked game.')
+            print(likereq.text)
     elif likereq.status_code == 429:
         print('Ratelimited. Waiting and trying again')
         time.sleep(20)
-        return likeGame(cookie, gameid)
-    else:
-        print(likereq.text)
-
-def dislikeGame(cookie, gameid):
-    token = getToken(cookie)
-    cookies = {
-        ".ROBLOSECURITY": cookie
-    }
-    data = {
-        "assetId": gameid,
-        "vote": True
-    }
-    headers = {
-        'x-csrf-token': token
-    }
-    likereq = requests.post(f'https://www.roblox.com/voting/vote?assetId={gameid}&vote=false', data=data, headers=headers, cookies=cookies)
-    if likereq.status_code == 200:
-        print('Sucessfully disliked game. If likes are not showing up account is unverified.')
-    elif likereq.status_code == 429:
-        print('Ratelimited. Waiting and trying again')
-        time.sleep(20)
-        return dislikeGame(cookie, gameid)
+        return likeGame(cookie, gameid, proxy)
     elif "FloodCheckThresholdMet" in likereq.text:
         print('Ratelimited. Waiting and trying again')
         time.sleep(20)
-        return dislikeGame(cookie, gameid)
+        return likeGame(cookie, gameid, proxy)
     else:
         print(likereq.text)
 
-def getToken(cookie):
+def dislikeGame(cookie, gameid, proxy):
+    token = getToken(cookie, proxy)
+    cookies = {
+        ".ROBLOSECURITY": cookie
+    }
+    data = {
+        "assetId": gameid,
+        "vote": False
+    }
+    headers = {
+        'x-csrf-token': token
+    }
+    likereq = requests.post(f'https://www.roblox.com/voting/vote?assetId={gameid}&vote=false', proxies=proxy, data=data, headers=headers, cookies=cookies)
+    if likereq.status_code == 200:
+        if "EmailIsVerified" in likereq.text:
+            print('Account is not verified.')
+        else:
+            print('Sucessfully disliked game.')
+            print(likereq.text)
+    elif likereq.status_code == 429:
+        print('Ratelimited. Waiting and trying again')
+        time.sleep(20)
+        return dislikeGame(cookie, gameid, proxy)
+    elif "FloodCheckThresholdMet" in likereq.text:
+        print('Ratelimited. Waiting and trying again')
+        time.sleep(20)
+        return dislikeGame(cookie, gameid, proxy)
+    else:
+        print(likereq.text)
+
+def getToken(cookie, proxy):
     try:
-        request = requests.post("https://auth.roblox.com/v1/logout", headers={"Cookie": f".ROBLOSECURITY={cookie};"})
+        request = requests.post("https://auth.roblox.com/v1/logout", proxies=proxy, headers={"Cookie": f".ROBLOSECURITY={cookie};"})
         if request.status_code == 200 or request.status_code == 403:
             print('Successfully updated token')
             return request.headers["x-csrf-token"]
@@ -107,24 +125,24 @@ def getToken(cookie):
         print("Unknown error occurred when attempting to update token")
         print(error)
         print(request.text)
-def joinLike(gameid):
+def joinLike(gameid, proxy):
     while 1:
         try:
             cookie = random.choice(cookies)
             client = get_session_cookie(cookie).create_client(gameid)
             time.sleep(6)
             client.close()
-            likeGame(cookie, gameid)
+            likeGame(cookie, gameid, proxy)
         except:
             pass
-def joinDislike(gameid):
+def joinDislike(gameid, proxy):
     while 1:
         try:
             cookie = random.choice(cookies)
             client = get_session_cookie(cookie).create_client(gameid)
             time.sleep(6)
             client.close()
-            dislikeGame(cookie, gameid)
+            dislikeGame(cookie, gameid, proxy)
         except:
             pass
 
@@ -164,11 +182,17 @@ elif "2" in option:
 elif "3" in option:
     gamelink = input('Game ID: ')
     for i in range(15):
-        Thread(target=joinLike, args=[gamelink]).start()
+        proxy = {
+            "https": "https://" + next(ProxyPool)
+        }
+        Thread(target=joinLike, args=[gamelink, proxy]).start()
 elif "4" in option:
     gamelink = input('Game ID: ')
     for i in range(15):
-        Thread(target=joinDislike, args=[gamelink]).start()
+        proxy = {
+            "https": "https://" + next(ProxyPool)
+        }
+        Thread(target=joinDislike, args=[gamelink, proxy]).start()
 elif "5" in option:
     gamelink = input('Game ID: ')
     for i in range(15):
