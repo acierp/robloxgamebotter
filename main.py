@@ -160,7 +160,7 @@ elif "2" in option:
     gamelink = input('Game ID: ')
     messagetosend = input('Message: ')
     for i in range(15):
-        Thread(target=noMessage, args=[messagetosend, gamelink]).start()
+        Thread(target=joinMessage, args=[messagetosend, gamelink]).start()
 elif "3" in option:
     gamelink = input('Game ID: ')
     for i in range(15):
@@ -173,7 +173,3 @@ elif "5" in option:
     gamelink = input('Game ID: ')
     for i in range(15):
         Thread(target=joinNoLeave, args=[gamelink]).start()
-else:
-    print('Invalid option. Closing.')
-    time.sleep(5)
-    exit()
