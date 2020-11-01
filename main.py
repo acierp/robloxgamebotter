@@ -5,17 +5,25 @@ import threading
 from threading import Thread
 import random
 import requests
+import json
 from itertools import cycle
-
-
 
 mutex = RobloxClientMutex()
 
-with open("cookies.txt", encoding='utf-8') as f:
+with open("cookies.txt", 'r+', encoding='utf-8') as f:
     cookies = f.read().splitlines()
 
-with open('proxies.txt','r', encoding='utf-8') as f:
+with open('proxies.txt','r+', encoding='utf-8') as f:
 	ProxyPool = cycle(f.read().splitlines())
+
+with open('config.json','r+', encoding='utf-8') as f:
+    config = json.load(f)
+
+threads = config['threads']
+
+
+messagesrealtosend = open('messages.txt').read().splitlines()
+mymessage = random.choice(messagesrealtosend)
 
 def get_session():
     while 1:
@@ -165,6 +173,21 @@ def spamGame(gameid, message):
                 time.sleep(3)
         except:
             pass
+
+def realPlayerjoin(gameid):
+    while 1:
+        try:
+            client = get_session().create_client(gameid)
+            while True:
+                time.sleep(random.randrange(5, 20))
+                mymessage = random.choice(messagesrealtosend)
+                client.chat_message(mymessage)
+                time.sleep(1)
+                client.antiafk()
+                time.sleep(random.randrange(5, 20))
+        except:
+            pass
+    
 print('''
 
 ░██████╗░░█████╗░███╗░░░███╗███████╗██████╗░░█████╗░████████╗
@@ -179,39 +202,45 @@ print('''
 [3] Join and like
 [4] Join and dislike
 [5] Join no disconnect
-[6] Spam a message''')
+[6] Spam a message
+[7] Join player normalizer''')
+
 option = input('\nOption: ')
 if "1" in option:
     gamelink = input('Game ID: ')
-    for i in range(15):
+    for i in range(int(threads)):
         Thread(target=noMessage, args=[gamelink]).start()
 elif "2" in option:
     gamelink = input('Game ID: ')
     messagetosend = input('Message: ')
-    for i in range(15):
+    for i in range(int(threads)):
         Thread(target=joinMessage, args=[messagetosend, gamelink]).start()
 elif "3" in option:
     gamelink = input('Game ID: ')
-    for i in range(15):
+    for i in range(int(threads)):
         proxy = {
             "https": "https://" + next(ProxyPool)
         }
         Thread(target=joinLike, args=[gamelink, proxy]).start()
 elif "4" in option:
     gamelink = input('Game ID: ')
-    for i in range(15):
+    for i in range(int(threads)):
         proxy = {
             "https": "https://" + next(ProxyPool)
         }
         Thread(target=joinDislike, args=[gamelink, proxy]).start()
 elif "5" in option:
     gamelink = input('Game ID: ')
-    for i in range(15):
+    for i in range(int(threads)):
         Thread(target=joinNoLeave, args=[gamelink]).start()
 elif "6" in option:
     gamelink = input('Game ID: ')
     message = input('Message to spam: ')
-    for i in range(15):
+    for i in range(int(threads)):
         Thread(target=spamGame, args=[gamelink, message]).start()
+elif "7" in option:
+    gamelink = input('Game ID: ')
+    for i in range(int(threads)):
+        Thread(target=realPlayerjoin, args=[gamelink]).start()
 else:
     print('Invalid choice entered.')
