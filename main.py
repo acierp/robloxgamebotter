@@ -155,6 +155,16 @@ def joinNoLeave(gameid):
             print('Client was closed due to being idle for 15 minutes.')
         except:
             pass
+
+def spamGame(gameid, message):
+    while True:
+        try:
+            client = get_session().create_client(gameid)
+            while True:
+                client.chat_message(message)
+                time.sleep(3)
+        except:
+            pass
 print('''
 
 ░██████╗░░█████╗░███╗░░░███╗███████╗██████╗░░█████╗░████████╗
@@ -168,7 +178,8 @@ print('''
 [2] Join and send a message
 [3] Join and like
 [4] Join and dislike
-[5] Join no disconnect''')
+[5] Join no disconnect
+[6] Spam a message''')
 option = input('\nOption: ')
 if "1" in option:
     gamelink = input('Game ID: ')
@@ -197,3 +208,10 @@ elif "5" in option:
     gamelink = input('Game ID: ')
     for i in range(15):
         Thread(target=joinNoLeave, args=[gamelink]).start()
+elif "6" in option:
+    gamelink = input('Game ID: ')
+    message = input('Message to spam: ')
+    for i in range(15):
+        Thread(target=spamGame, args=[gamelink, message]).start()
+else:
+    print('Invalid choice entered.')
