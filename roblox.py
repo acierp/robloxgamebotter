@@ -14,6 +14,13 @@ import win32process
 import win32gui
 import win32com.client
 
+
+randkeys = [
+    0x57,
+    0x41,
+    0x53,
+    0x44
+]
 shell = win32com.client.Dispatch("WScript.Shell")
 client_lock = Lock()
 
@@ -155,6 +162,11 @@ class Client:
             time.sleep(0.03)
             release_key(0x0D)
             time.sleep(0.08)
+    def antiafk(self):
+        with client_lock:
+            self.focus()
+            press_key(random.choice(randkeys))
+            time.sleep(0.03)
 
 class Roblox:
     def __init__(self, ROBLOSECURITY=None, manager=None):
